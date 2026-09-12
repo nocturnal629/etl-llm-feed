@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/cron/ingest.py": { "runtime": "python3.12" },
+    "api/cron/summarize.py": { "runtime": "python3.12" }
+  },
+  "crons": [
+    { "path": "/api/cron/ingest", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/summarize", "schedule": "0 9 * * *" }
+  ]
+}
