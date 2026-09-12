@@ -30,13 +30,13 @@ export default async function DigestsPage() {
           const dateStr = String(d.digest_date).slice(0, 10)
           const json = d.summary_json as {
             themes?: string[]
-            top_papers?: { title: string; reason: string }[]
+            top_items?: { title: string; reason: string }[]
           }
           return (
             <article key={String(d.id)} className="border rounded-lg p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">{dateStr}</h2>
-                <span className="text-xs text-gray-400">{d.item_count} papers &middot; {d.model}</span>
+                <span className="text-xs text-gray-400">{d.item_count} items &middot; {d.model}</span>
               </div>
 
               {json.themes && json.themes.length > 0 && (
@@ -52,11 +52,11 @@ export default async function DigestsPage() {
                 </div>
               )}
 
-              {json.top_papers && json.top_papers.length > 0 && (
+              {json.top_items && json.top_items.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Top Papers</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Top Items</p>
                   <ul className="space-y-2">
-                    {json.top_papers.map((p: { title: string; reason: string }) => (
+                    {json.top_items.map((p: { title: string; reason: string }) => (
                       <li key={p.title} className="text-sm">
                         <span className="font-medium">{p.title}</span>
                         <span className="text-gray-500"> — {p.reason}</span>

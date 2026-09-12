@@ -7,7 +7,7 @@ interface DayStat {
   count: number
 }
 
-export default function PapersChart({ data }: { data: DayStat[] }) {
+export default function ActivityChart({ data }: { data: DayStat[] }) {
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import sql from '@/lib/ts/db'
-import PapersChart from './components/PapersChart'
+import ActivityChart from './components/ActivityChart'
 
 // Dashboard shows live ingestion/digest data — must never be cached as a static build artifact.
 export const dynamic = 'force-dynamic'
@@ -26,7 +26,7 @@ async function getDailyStats() {
 async function getRecentItems() {
   return sql`
     SELECT external_id, title, url, published_at,
-           extracted->>'novelty_score' AS novelty_score
+           extracted->>'interest_score' AS interest_score
     FROM items ORDER BY published_at DESC LIMIT 10
   `
 }
@@ -43,15 +43,15 @@ export default async function Home() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">ETL LLM Feed</h1>
         <nav className="flex gap-4 text-sm text-gray-600">
-          <Link href="/items" className="hover:underline">All papers</Link>
+          <Link href="/items" className="hover:underline">All items</Link>
           <Link href="/digests" className="hover:underline">Digests</Link>
         </nav>
       </div>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Papers ingested (last 7 days)</h2>
+        <h2 className="text-lg font-semibold mb-3">Items ingested (last 7 days)</h2>
         {stats.length > 0 ? (
-          <PapersChart data={stats} />
+          <ActivityChart data={stats} />
         ) : (
           <p className="text-gray-500 text-sm">No data yet — run the ingest cron to populate.</p>
         )}
@@ -62,7 +62,7 @@ export default async function Home() {
         {digest ? (
           <div className="space-y-2">
             <p className="text-sm text-gray-500">
-              {String(digest.digest_date).slice(0, 10)} &middot; {digest.item_count} papers &middot; {digest.model}
+              {String(digest.digest_date).slice(0, 10)} &middot; {digest.item_count} items &middot; {digest.model}
             </p>
             <pre className="whitespace-pre-wrap text-sm leading-relaxed bg-gray-50 rounded p-4 overflow-auto">
               {digest.summary_markdown}
@@ -75,15 +75,15 @@ export default async function Home() {
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Recent Papers</h2>
+          <h2 className="text-lg font-semibold">Recent Items</h2>
           <Link href="/items" className="text-sm text-indigo-600 hover:underline">View all →</Link>
         </div>
         <ul className="space-y-2">
           {recent.map((item) => (
             <li key={String(item.external_id)} className="flex items-start gap-3 text-sm">
-              {item.novelty_score && (
+              {item.interest_score && (
                 <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">
-                  {item.novelty_score}
+                  {item.interest_score}
                 </span>
               )}
               <div>
@@ -102,7 +102,7 @@ export default async function Home() {
             </li>
           ))}
           {recent.length === 0 && (
-            <li className="text-gray-500 text-sm">No papers yet.</li>
+            <li className="text-gray-500 text-sm">No items yet.</li>
           )}
         </ul>
       </section>

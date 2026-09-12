@@ -1,4 +1,4 @@
-"""Vercel cron function: generate daily LLM digest from extracted items."""
+"""Vercel cron function: generate daily Minecraft Wiki LLM digest from extracted items."""
 from __future__ import annotations
 
 import json
@@ -22,16 +22,16 @@ log = get_logger(__name__)
 
 def _render_markdown(summary: DigestSummary, digest_date: date, item_count: int) -> str:
     lines = [
-        f"# AI/ML Research Digest — {digest_date}",
-        f"\n**{item_count} papers** reviewed.\n",
+        f"# Minecraft Wiki Daily Digest — {digest_date}",
+        f"\n**{item_count} changes** reviewed.\n",
         "## Executive Summary",
         summary.executive_summary,
         "\n## Key Themes",
         *[f"- {theme}" for theme in summary.themes],
-        "\n## Top Papers",
+        "\n## Top Items",
     ]
-    for paper in summary.top_papers:
-        lines += [f"\n### {paper.title}", f"**Why:** {paper.reason}"]
+    for top_item in summary.top_items:
+        lines += [f"\n### {top_item.title}", f"**Why:** {top_item.reason}"]
     return "\n".join(lines)
 
 

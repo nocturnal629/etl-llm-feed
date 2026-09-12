@@ -11,12 +11,12 @@ async function getItems(page: number, date: string) {
   const [items, [{ count }]] = await Promise.all([
     date
       ? sql`SELECT external_id, title, url, published_at,
-                   extracted->>'novelty_score' AS novelty_score,
+                   extracted->>'interest_score' AS interest_score,
                    extracted->'topics' AS topics
              FROM items WHERE DATE(published_at) = ${date}
              ORDER BY published_at DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`
       : sql`SELECT external_id, title, url, published_at,
-                   extracted->>'novelty_score' AS novelty_score,
+                   extracted->>'interest_score' AS interest_score,
                    extracted->'topics' AS topics
              FROM items ORDER BY published_at DESC LIMIT ${PAGE_SIZE} OFFSET ${offset}`,
     date
@@ -39,7 +39,7 @@ export default async function ItemsPage({
   return (
     <main className="max-w-5xl mx-auto p-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">All Papers</h1>
+        <h1 className="text-2xl font-bold">All Items</h1>
         <Link href="/" className="text-sm text-gray-500 hover:underline">← Home</Link>
       </div>
 
@@ -60,7 +60,7 @@ export default async function ItemsPage({
         )}
       </form>
 
-      <p className="text-sm text-gray-500">{total} paper{total !== 1 ? 's' : ''}{date ? ` on ${date}` : ''}</p>
+      <p className="text-sm text-gray-500">{total} item{total !== 1 ? 's' : ''}{date ? ` on ${date}` : ''}</p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -78,9 +78,9 @@ export default async function ItemsPage({
               return (
                 <tr key={String(item.external_id)} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="py-2 pr-4">
-                    {item.novelty_score ? (
+                    {item.interest_score ? (
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
-                        {item.novelty_score}
+                        {item.interest_score}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>
@@ -113,7 +113,7 @@ export default async function ItemsPage({
             })}
             {items.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-gray-400">No papers found.</td>
+                <td colSpan={4} className="py-6 text-center text-gray-400">No items found.</td>
               </tr>
             )}
           </tbody>

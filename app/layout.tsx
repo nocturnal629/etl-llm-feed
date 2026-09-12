@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ETL LLM Feed',
-  description: 'Daily AI/ML paper digest from arXiv',
+  description: 'Daily Minecraft Wiki digest powered by Gemini',
 }
 
 export default function RootLayout({

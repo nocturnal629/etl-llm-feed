@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import pytest
 
 from api.cron import ingest
-from lib.python.schemas import ArxivPaper, ItemExtraction
+from lib.python.schemas import ItemExtraction, WikiChange
 from tests.conftest import FakeResult
 
 
@@ -64,16 +64,16 @@ class FakeIngestConn:
         return False
 
 
-def _paper(external_id: str, published_at: datetime) -> ArxivPaper:
-    return ArxivPaper(
+def _change(external_id: str, published_at: datetime) -> WikiChange:
+    return WikiChange(
         external_id=external_id,
-        title=f"Paper {external_id}",
-        url=f"http://arxiv.org/abs/{external_id}",
+        title=f"Page {external_id}",
+        url=f"https://minecraft.wiki/w/Page_{external_id}",
         published_at=published_at,
-        authors=["Author"],
-        abstract="An abstract.",
-        categories=["cs.AI"],
-        raw_payload={"id": external_id},
+        change_type="edit",
+        user="Steve",
+        body_text="Some article intro.",
+        raw_payload={"rcid": external_id},
     )
 
 
@@ -82,9 +82,7 @@ def patched_extraction(monkeypatch):
     monkeypatch.setattr(
         ingest,
         "extract_item",
-        lambda title, abstract: ItemExtraction(
-            topics=["llms"], key_contribution="x", methodology="y", novelty_score=3
-        ),
+        lambda title, body_text: ItemExtraction(topics=["redstone"], summary="x", interest_score=3),
     )
 
 
@@ -95,11 +93,11 @@ def test_ingest_first_run_with_empty_db_uses_now_as_since(monkeypatch):
 
     captured = {}
 
-    def fake_fetch_papers(since=None, **kwargs):
+    def fake_fetch_changes(since=None, **kwargs):
         captured["since"] = since
         return iter([])
 
-    monkeypatch.setattr(ingest, "fetch_papers", fake_fetch_papers)
+    monkeypatch.setattr(ingest, "fetch_changes", fake_fetch_changes)
 
     ingest._ingest()
 
@@ -110,8 +108,8 @@ def test_ingest_first_run_with_empty_db_uses_now_as_since(monkeypatch):
 def test_ingest_inserts_new_items_and_runs_extraction(monkeypatch, patched_extraction):
     conn = FakeIngestConn(watermark=None)
     monkeypatch.setattr(ingest, "get_conn", lambda: conn)
-    papers = [_paper("2401.00001", datetime(2024, 1, 24, tzinfo=timezone.utc))]
-    monkeypatch.setattr(ingest, "fetch_papers", lambda since=None, **kw: iter(papers))
+    changes = [_change("123", datetime(2024, 1, 24, tzinfo=timezone.utc))]
+    monkeypatch.setattr(ingest, "fetch_changes", lambda since=None, **kw: iter(changes))
 
     result = ingest._ingest()
 
@@ -119,15 +117,15 @@ def test_ingest_inserts_new_items_and_runs_extraction(monkeypatch, patched_extra
     assert result["inserted"] == 1
     assert result["updated"] == 0
     assert result["extracted"] == 1
-    assert conn.items["2401.00001"]["extracted"] is not None
+    assert conn.items["123"]["extracted"] is not None
 
 
 def test_ingest_is_idempotent_on_second_run(monkeypatch, patched_extraction):
-    """Re-running with the same papers must not create duplicates or re-extract."""
+    """Re-running with the same changes must not create duplicates or re-extract."""
     conn = FakeIngestConn(watermark=None)
     monkeypatch.setattr(ingest, "get_conn", lambda: conn)
-    papers = [_paper("2401.00001", datetime(2024, 1, 24, tzinfo=timezone.utc))]
-    monkeypatch.setattr(ingest, "fetch_papers", lambda since=None, **kw: iter(papers))
+    changes = [_change("123", datetime(2024, 1, 24, tzinfo=timezone.utc))]
+    monkeypatch.setattr(ingest, "fetch_changes", lambda since=None, **kw: iter(changes))
 
     first = ingest._ingest()
     assert first["inserted"] == 1
@@ -144,17 +142,17 @@ def test_ingest_is_idempotent_on_second_run(monkeypatch, patched_extraction):
 def test_ingest_updates_raw_payload_without_touching_extracted(monkeypatch, patched_extraction):
     conn = FakeIngestConn(watermark=None)
     monkeypatch.setattr(ingest, "get_conn", lambda: conn)
-    papers = [_paper("2401.00001", datetime(2024, 1, 24, tzinfo=timezone.utc))]
-    monkeypatch.setattr(ingest, "fetch_papers", lambda since=None, **kw: iter(papers))
+    changes = [_change("123", datetime(2024, 1, 24, tzinfo=timezone.utc))]
+    monkeypatch.setattr(ingest, "fetch_changes", lambda since=None, **kw: iter(changes))
     ingest._ingest()
 
-    original_extracted = conn.items["2401.00001"]["extracted"]
+    original_extracted = conn.items["123"]["extracted"]
 
-    updated_paper = _paper("2401.00001", datetime(2024, 1, 24, tzinfo=timezone.utc))
-    updated_paper.raw_payload["revised"] = True
-    monkeypatch.setattr(ingest, "fetch_papers", lambda since=None, **kw: iter([updated_paper]))
+    updated_change = _change("123", datetime(2024, 1, 24, tzinfo=timezone.utc))
+    updated_change.raw_payload["revised"] = True
+    monkeypatch.setattr(ingest, "fetch_changes", lambda since=None, **kw: iter([updated_change]))
 
     ingest._ingest()
 
-    assert json.loads(conn.items["2401.00001"]["raw_payload"])["revised"] is True
-    assert conn.items["2401.00001"]["extracted"] == original_extracted
+    assert json.loads(conn.items["123"]["raw_payload"])["revised"] is True
+    assert conn.items["123"]["extracted"] == original_extracted

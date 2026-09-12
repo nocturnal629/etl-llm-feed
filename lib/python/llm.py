@@ -51,12 +51,13 @@ def _call_structured(
     raise RuntimeError("unreachable")
 
 
-def extract_item(title: str, abstract: str) -> ItemExtraction | None:
+def extract_item(title: str, body_text: str) -> ItemExtraction | None:
     """Per-record extraction with Gemini Flash. Returns None on failure (don't block ingestion)."""
     client = _client()
     prompt = (
-        "Extract structured metadata from this AI/ML research paper.\n\n"
-        f"Title: {title}\n\nAbstract: {abstract}"
+        "Extract structured metadata from this Minecraft Wiki page.\n\n"
+        f"Title: {title}\n\n"
+        f"Current article intro: {body_text or '(no extract available)'}"
     )
     try:
         return _call_structured(client, _FLASH_MODEL, prompt, ItemExtraction)
@@ -68,20 +69,22 @@ def extract_item(title: str, abstract: str) -> ItemExtraction | None:
 def generate_digest(items: list[dict]) -> DigestSummary | None:
     """Daily digest generation with Gemini Pro. Returns None on failure."""
     client = _client()
-    papers_text = "\n\n".join(
-        "ID: {ext}\nTitle: {title}\nKey contribution: {contrib}\nTopics: {topics}".format(
+    items_text = "\n\n".join(
+        "ID: {ext}\nTitle: {title}\nSummary: {summary}\nTopics: {topics}".format(
             ext=item["external_id"],
             title=item["title"],
-            contrib=(item.get("extracted") or {}).get("key_contribution", "N/A"),
+            summary=(item.get("extracted") or {}).get("summary", "N/A"),
             topics=", ".join((item.get("extracted") or {}).get("topics", [])),
         )
         for item in items
     )
     prompt = (
-        "You are an AI research editor. Analyze today's arXiv papers and produce a structured digest.\n\n"
-        f"Papers:\n{papers_text}\n\n"
-        "Identify 3-5 major themes across these papers, pick the top 3 papers worth reading "
-        "with a one-sentence reason each, and write a one-paragraph executive summary."
+        "You are an editor tracking updates to the Minecraft Wiki. Analyze today's page "
+        "changes and produce a structured digest.\n\n"
+        f"Changes:\n{items_text}\n\n"
+        "Identify 3-5 major themes or trends across these changes, pick the top 3 items worth "
+        "checking out with a one-sentence reason each, and write a one-paragraph executive "
+        "summary of today's wiki activity."
     )
     try:
         return _call_structured(client, _PRO_MODEL, prompt, DigestSummary)
